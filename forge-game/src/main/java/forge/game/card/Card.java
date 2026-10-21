@@ -488,6 +488,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     // A device starts inactive each time it becomes a new card instance.
     // This is separate from tapping, transforming, and face-down state.
     private boolean deviceActive;
+    private final List<KeywordInterface> deviceGrantedKeywords = new ArrayList<>();
 
     public boolean isDeviceActive() {
         return deviceActive;
@@ -498,6 +499,25 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
             return;
         }
         deviceActive = active;
+        if (active) {
+            // Keyword abilities beneath Inactive: were saved separately
+            // during script parsing, and must not be granted prematurely.
+            for (Map.Entry<String, String> entry : getSVars().entrySet()) {
+                if (entry.getKey().startsWith("__InactiveKeyword")) {
+                    final KeywordInterface keyword = getCurrentState()
+                            .addIntrinsicKeyword(entry.getValue(), true);
+                    if (keyword != null) {
+                        deviceGrantedKeywords.add(keyword);
+                    }
+                }
+            }
+        } else {
+            for (final KeywordInterface keyword : deviceGrantedKeywords) {
+                getCurrentState().removeIntrinsicKeyword(keyword);
+            }
+            deviceGrantedKeywords.clear();
+        }
+        updateKeywordsCache();
         if (getGame() != null) {
             getGame().getAction().checkStaticAbilities();
             getGame().getTriggerHandler().clearActiveTriggers(this, null);
