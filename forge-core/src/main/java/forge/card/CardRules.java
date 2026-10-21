@@ -663,7 +663,7 @@ public final class CardRules implements ICardCharacteristics {
                 face.addTrigger("Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack"
                         + " | Execute$ UniqueRuleExile"
                         + " | TriggerDescription$ Whenever you cast CARDNAME, exile all other copies of it.");
-                face.addTrigger("Mode$ ChangesZone | Origin$ Any | ExcludedOrigins$ Battlefield"
+                face.addTrigger("Mode$ ChangesZone | Origin$ Any | ExcludedOrigins$ Battlefield | RequireOrigin$ True"
                         + " | Destination$ Battlefield | ValidCard$ Card.Self"
                         + " | Execute$ UniqueRuleExile"
                         + " | TriggerDescription$ When CARDNAME enters the battlefield from another zone, exile all other copies of it.");
