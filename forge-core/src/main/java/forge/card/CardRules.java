@@ -594,6 +594,7 @@ public final class CardRules implements ICardCharacteristics {
         private CardFace[] faces = new CardFace[] { null, null, null, null, null, null, null };
         private int curFace = 0;
         private final Set<CardFace> inactiveSections = new HashSet<>();
+        private int inactiveKeywordNumber;
         private CardSplitType altMode = CardSplitType.None;
         private String meldWith = "";
         private String partnerWith = "";
@@ -645,6 +646,7 @@ public final class CardRules implements ICardCharacteristics {
             this.placeholderFaces = null;
             this.tokens = Lists.newArrayList();
             this.inactiveSections.clear();
+            this.inactiveKeywordNumber = 0;
         }
 
         /**
@@ -800,7 +802,13 @@ public final class CardRules implements ICardCharacteristics {
 
                 case 'K':
                     if ("K".equals(key)) {
-                        face.addKeyword(value);
+                        if (inactiveSections.contains(face)) {
+                            // Do not grant intrinsic keyword traits until
+                            // this device's ActivateDevice ability resolves.
+                            face.addSVar("__InactiveKeyword" + inactiveKeywordNumber++, value);
+                        } else {
+                            face.addKeyword(value);
+                        }
                         if (value.startsWith("Partner with:")) {
                             this.partnerWith = value.split(":")[1];
                         }
