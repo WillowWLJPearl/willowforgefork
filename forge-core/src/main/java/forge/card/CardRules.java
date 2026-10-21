@@ -593,6 +593,7 @@ public final class CardRules implements ICardCharacteristics {
         // fields to build
         private CardFace[] faces = new CardFace[] { null, null, null, null, null, null, null };
         private int curFace = 0;
+        private final Set<CardFace> inactiveSections = new HashSet<>();
         private CardSplitType altMode = CardSplitType.None;
         private String meldWith = "";
         private String partnerWith = "";
@@ -643,6 +644,7 @@ public final class CardRules implements ICardCharacteristics {
             this.supportedFunctionalVariants = null;
             this.placeholderFaces = null;
             this.tokens = Lists.newArrayList();
+            this.inactiveSections.clear();
         }
 
         /**
@@ -739,7 +741,7 @@ public final class CardRules implements ICardCharacteristics {
             switch (key.charAt(0)) {
                 case 'A':
                     if ("A".equals(key)) {
-                        face.addAbility(value);
+                        face.addAbility(inactiveSections.contains(face) ? value + " | NeedsActiveDevice$ True" : value);
                     } else if ("AI".equals(key)) {
                         colonPos = value.indexOf(':');
                         String variable = colonPos > 0 ? value.substring(0, colonPos) : value;
@@ -833,6 +835,12 @@ public final class CardRules implements ICardCharacteristics {
                     break;
 
 
+                case 'I':
+                    if ("Inactive".equals(key)) {
+                        inactiveSections.add(face);
+                    }
+                    break;
+
                 case 'O':
                     if ("Oracle".equals(key)) {
                         face.setOracleText(value);
@@ -859,13 +867,13 @@ public final class CardRules implements ICardCharacteristics {
 
                 case 'R':
                     if ("R".equals(key)) {
-                        face.addReplacementEffect(value);
+                        face.addReplacementEffect(inactiveSections.contains(face) ? value + " | NeedsActiveDevice$ True" : value);
                     }
                     break;
 
                 case 'S':
                     if ("S".equals(key)) {
-                        face.addStaticAbility(value);
+                        face.addStaticAbility(inactiveSections.contains(face) ? value + " | NeedsActiveDevice$ True" : value);
                     } else if (key.startsWith("SPECIALIZE")) {
                         if (value.equals("WHITE")) {
                             this.curFace = 2;
@@ -893,7 +901,7 @@ public final class CardRules implements ICardCharacteristics {
 
                 case 'T':
                     if ("T".equals(key)) {
-                        face.addTrigger(value);
+                        face.addTrigger(inactiveSections.contains(face) ? value + " | NeedsActiveDevice$ True" : value);
                     } else if ("Types".equals(key)) {
                         face.setType(CardType.parse(value, false));
                     } else if ("Text".equals(key) && StringUtils.isNotBlank(value)) {
