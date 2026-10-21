@@ -14,10 +14,19 @@ import forge.game.spellability.SpellAbility;
 public class ActivateDeviceEffect extends SpellAbilityEffect {
     @Override
     public void resolve(final SpellAbility sa) {
-        final Card device = sa.getHostCard();
-        if (device == null || !device.isInPlay()) {
-            return;
+        if (sa.usesTargeting()) {
+            // Other cards can interface with devices, such as a Mnemonic
+            // Device that activates another target Mnemonic Device.
+            for (final Card device : getTargetCards(sa)) {
+                if (device != null && device.isInPlay()) {
+                    device.setDeviceActive(!sa.hasParam("Deactivate"));
+                }
+            }
+        } else {
+            final Card device = sa.getHostCard();
+            if (device != null && device.isInPlay()) {
+                device.setDeviceActive(!sa.hasParam("Deactivate"));
+            }
         }
-        device.setDeviceActive(!sa.hasParam("Deactivate"));
     }
 }
