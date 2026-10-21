@@ -791,6 +791,31 @@ public class Combat {
             }
 
             GameEntity defender = getDefenderByAttacker(band);
+
+            // Piercing is not trample: the full combat damage is dealt to
+            // every blocking creature AND to the attacked player/object.
+            // Assignment still flows through normal damage prevention,
+            // replacement effects, lifelink, deathtouch, etc.
+            if (attacker.hasKeyword(Keyword.PIERCING)) {
+                attackers.remove(attacker);
+                assignedDamage = true;
+                if (defender == null) {
+                    defender = getDefenderPlayerByAttacker(attacker);
+                }
+                if (defender != null) {
+                    if (defender instanceof Card) {
+                        ((Card) defender).addAssignedDamage(damageDealt, attacker);
+                    }
+                    damageMap.get().put(attacker, defender, damageDealt);
+                }
+
+                for (final Card blocker : getBlockers(attacker)) {
+                    blocker.addAssignedDamage(damageDealt, attacker);
+                    damageMap.get().put(attacker, blocker, damageDealt);
+                }
+                continue;
+            }
+
             Player assigningPlayer = getAttackingPlayer();
             orderedBlockers = blockersOrderedForDamageAssignment.get().get(attacker);
             // Defensive Formation is very similar to Banding with Blockers
