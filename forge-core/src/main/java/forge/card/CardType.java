@@ -214,6 +214,7 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
             changed = true;
         }
         sanisfySubtypes();
+        if (changed) { calculatedType = null; }
         return changed;
     }
     public boolean addAll(final CardTypeView type) {
@@ -223,6 +224,7 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         if (Iterables.addAll(subtypes, type.getSubtypes())) { changed = true; }
         if (Iterables.addAll(overtypes, type.getOvertypes())) { changed = true; }
         sanisfySubtypes();
+        if (changed) { calculatedType = null; }
         return changed;
     }
 
@@ -256,14 +258,16 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
     }
 
     public boolean remove(final Supertype st) {
-        return supertypes.remove(st);
+        if (!supertypes.remove(st)) { return false; }
+        calculatedType = null;
+        return true;
     }
 
     public boolean remove(final String str) {
         boolean changed = false;
 
         // try to remove sub type first if able
-        if (subtypes.remove(str)) {
+        if (subtypes.remove(str) || overtypes.remove(str)) {
             changed = true;
         } else {
             Supertype st = Supertype.getEnum(str);
@@ -337,6 +341,12 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
 
     public boolean hasOvertype(String overtype) {
         return overtypes.contains(overtype);
+    }
+
+    public boolean removeOvertype(String overtype) {
+        if (!overtypes.remove(overtype)) { return false; }
+        calculatedType = null;
+        return true;
     }
 
     public Collection<String> getOvertypes() {
