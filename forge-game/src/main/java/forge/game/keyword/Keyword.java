@@ -58,6 +58,7 @@ public enum Keyword {
     DISTURB("Disturb", KeywordWithCost.class, false, "You may cast this card from your graveyard transformed for its disturb cost."),
     DOCTORS_COMPANION("Doctor's companion", Partner.class, true, "You can have two commanders if the other is the Doctor."),
     DOUBLE_AGENDA("Double agenda", SimpleKeyword.class, false, "Start the game with this conspiracy face down in the command zone and secretly choose two different card names. You may turn this conspiracy face up any time and reveal those names."),
+    DEVICE_ATTUNED("Device-attuned", SimpleKeyword.class, true, "This creature untaps instead of tapping when operating an interfaced Memonic Device."),
     DOUBLE_STRIKE("Double Strike", SimpleKeyword.class, true, "This creature deals both first-strike and regular combat damage."),
     DOUBLE_TEAM("Double team", SimpleKeyword.class, false, "When this creature attacks, if it's not a token, conjure a duplicate of it into your hand. Then both cards perpetually lose double team."),
     DREDGE("Dredge", KeywordWithAmount.class, false, "If you would draw a card, instead you may put exactly {%d:card} from the top of your library into your graveyard. If you do, return this card from your graveyard to your hand. Otherwise, draw a card."),
