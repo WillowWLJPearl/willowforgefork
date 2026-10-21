@@ -30,12 +30,18 @@ public class InterfaceDeviceEffect extends SpellAbilityEffect {
             if (source.getType().hasOvertype("Memonic Device")) {
                 if (target.getType().hasOvertype("Humanoid")
                         || target.hasKeyword(Keyword.DEVICE_ATTUNED)) {
-                    source.setDeviceUser(target);
+                    source.attachToEntity(target, sa);
+                    if (source.isAttachedToEntity(target)) {
+                        source.setDeviceUser(target);
+                    }
                 }
             } else if (target.getType().hasOvertype("Memonic Device")
                     && (source.getType().hasOvertype("Humanoid")
                     || source.hasKeyword(Keyword.DEVICE_ATTUNED))) {
-                target.setDeviceUser(source);
+                target.attachToEntity(source, sa);
+                if (target.isAttachedToEntity(source)) {
+                    target.setDeviceUser(source);
+                }
             }
         }
     }
