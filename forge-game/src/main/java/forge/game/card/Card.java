@@ -493,7 +493,8 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
 
     /** The creature currently interfacing with this Memonic Device. */
     public Card getDeviceUser() {
-        if (interfacingDeviceUser == null || !interfacingDeviceUser.isInPlay()) {
+        if (interfacingDeviceUser == null || !interfacingDeviceUser.isInPlay()
+                || !isInPlay() || getAttachedTo() != interfacingDeviceUser) {
             return null;
         }
         return interfacingDeviceUser;
@@ -5731,7 +5732,7 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     public final boolean isShrine()           { return getType().hasSubtype("Shrine"); }
     public final boolean isSaga()           { return getType().isSaga(); }
 
-    public final boolean isAttachment() { return getType().isAttachment(); }
+    public final boolean isAttachment() { return getType().isAttachment() || getType().hasOvertype("Memonic Device"); }
     public final boolean isHistoric()   { return getType().isHistoric(); }
 
     public final boolean isScheme()     { return getType().isScheme(); }
