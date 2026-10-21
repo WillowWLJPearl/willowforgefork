@@ -205,6 +205,7 @@ public enum ApiType {
     TwoPiles (TwoPilesEffect.class),
     Unattach (UnattachEffect.class),
     UnlockDoor (UnlockDoorEffect.class),
+    UniqueExile (UniqueExileEffect.class),
     Untap (UntapEffect.class),
     UntapAll (UntapAllEffect.class),
     Venture (VentureEffect.class),
