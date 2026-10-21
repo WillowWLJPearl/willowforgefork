@@ -321,6 +321,21 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                     break;
 
                 case COMBAT_DECLARE_ATTACKERS:
+                    if (multistrikeFollowup != null) {
+                        // Another ordered attack within this same combat,
+                        // not a new beginning-of-combat or end-of-combat event.
+                        // Preserve combat damage and this-combat history, but
+                        // give the next defender an independent blocker step.
+                        final CardCollection formerAttackers = combat.getAttackers();
+                        final CardCollection formerBlockers = combat.getAllBlockers();
+                        combat = new Combat(playerTurn);
+                        for (final Card c : formerAttackers) {
+                            c.updateAttackingForView();
+                        }
+                        for (final Card c : formerBlockers) {
+                            c.updateBlockingForView();
+                        }
+                    }
                     combat.initConstraints();
                     game.getStack().freezeStack(null);
                     declareAttackersTurnBasedAction();
@@ -362,10 +377,6 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                     break;
 
                 case COMBAT_END:
-                    // Additional ordered Multistrike attacks are independent
-                    // combats. If the creature died during this combat it has
-                    // no later attack, even when its defender is still legal.
-                    queueNextMultistrikeCombat();
                     // End Combat always happens
                     for (final Card c : game.getCardsIn(ZoneType.Battlefield)) {
                         c.onEndOfCombat(playerTurn);
@@ -492,6 +503,13 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
         if (!lossMap.isEmpty()) { // Run triggers if any player actually lost life
             final Map<AbilityKey, Object> runLifeLostParams = AbilityKey.mapFromPIMap(lossMap);
             game.getTriggerHandler().runTrigger(TriggerType.LifeLostAll, runLifeLostParams, false);
+        }
+
+        // Move to the next ordered Multistrike defender only after damage
+        // and priority passes. This stays within the current combat and
+        // allows the creature to die before any subsequent attack.
+        if (phase == PhaseType.COMBAT_DAMAGE) {
+            queueNextMultistrikeCombat();
         }
 
         switch (phase) {
@@ -757,14 +775,13 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                 continue;
             }
             multistrikeFollowup = next;
-            // Every attack has its own attacker declaration, blocker
-            // declaration, first strike step, regular damage and combat end.
-            // An ordered attack is canceled if its attacker left the field.
-            addExtraPhase(PhaseType.COMBAT_END, Arrays.asList(
-                    PhaseType.COMBAT_BEGIN, PhaseType.COMBAT_DECLARE_ATTACKERS,
+            // Repeat declaration, blocking and damage inside the existing
+            // combat. Do not repeat beginning/end-of-combat triggers.
+            addExtraPhase(PhaseType.COMBAT_DAMAGE, Arrays.asList(
+                    PhaseType.COMBAT_DECLARE_ATTACKERS,
                     PhaseType.COMBAT_DECLARE_BLOCKERS,
-                    PhaseType.COMBAT_FIRST_STRIKE_DAMAGE, PhaseType.COMBAT_DAMAGE,
-                    PhaseType.COMBAT_END), PhaseType.MAIN2);
+                    PhaseType.COMBAT_FIRST_STRIKE_DAMAGE,
+                    PhaseType.COMBAT_DAMAGE), PhaseType.COMBAT_END);
             return;
         }
     }
