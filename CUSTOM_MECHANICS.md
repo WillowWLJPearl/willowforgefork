@@ -43,7 +43,7 @@ A:AB$ Draw | Cost$ T | NumCards$ 1 | SpellDescription$ Draw a card.
 Oracle:Inactive — The following abilities do nothing until this device is activated.
 ```
 
-The `ActivateDevice` API sets the device to its active state when the ability resolves; `Deactivate$ True` on the API changes it back to inactive. Activating refreshes available abilities and triggers. **Keyword-granted abilities below the divider are not yet automatically gated.** Interaction with Device-attuned and attachment/interfacing rules still needs implementation.
+The `ActivateDevice` API sets the device to its active state when the ability resolves; `Deactivate$ True` on the API changes it back to inactive. With `ValidTgts$ Memonic Device`, it activates the targeted device(s) instead of its host, so cards can interface with other devices. Example: `A:AB$ ActivateDevice | Cost$ 1 T | ValidTgts$ Memonic Device | TargetMin$ 1 | TargetMax$ 1 | SpellDescription$ Activate target Memonic Device.` Activating refreshes available abilities and triggers. **Keyword-granted abilities below the divider are not yet automatically gated.** Interaction with Device-attuned and attachment/interfacing rules still needs implementation.
 
 ## Multistrike N (syntax only, NOT gameplay-complete)
 
