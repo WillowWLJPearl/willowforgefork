@@ -1,0 +1,8 @@
+[metadata]
+Code=WUS
+Date=2026-10-21
+Name=Unique Societies
+Type=Custom_Set
+
+[cards]
+1 U Sparring Fiend
