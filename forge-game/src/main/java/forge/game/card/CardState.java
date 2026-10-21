@@ -461,6 +461,9 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
         updateSpellAbilities(newCol);
         newCol.addAll(abilities);
         card.updateSpellAbilities(newCol, this);
+        if (!card.isDeviceActive()) {
+            newCol.removeIf(sa -> sa.hasParam("NeedsActiveDevice"));
+        }
         return newCol;
     }
     public final FCollectionView<SpellAbility> getManaAbilities() {
@@ -469,6 +472,9 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
         newCol.addAll(abilities);
         card.updateSpellAbilities(newCol, this);
         newCol.removeIf(Predicate.not(SpellAbility::isManaAbility));
+        if (!card.isDeviceActive()) {
+            newCol.removeIf(sa -> sa.hasParam("NeedsActiveDevice"));
+        }
         return newCol;
     }
     public final FCollectionView<SpellAbility> getNonManaAbilities() {
@@ -477,6 +483,9 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
         newCol.addAll(abilities);
         card.updateSpellAbilities(newCol, this);
         newCol.removeIf(SpellAbility::isManaAbility);
+        if (!card.isDeviceActive()) {
+            newCol.removeIf(sa -> sa.hasParam("NeedsActiveDevice"));
+        }
         return newCol;
     }
 
@@ -695,6 +704,9 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
                 result.addAll(getCard().getState(CardStateName.RightSplit).triggers);
         }
         card.updateTriggers(result, this);
+        if (!card.isDeviceActive()) {
+            result.removeIf(trigger -> trigger.hasParam("NeedsActiveDevice"));
+        }
         return result;
     }
 
@@ -724,6 +736,9 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
                 result.addAll(getCard().getState(CardStateName.RightSplit).staticAbilities);
         }
         card.updateStaticAbilities(result, this);
+        if (!card.isDeviceActive()) {
+            result.removeIf(ability -> ability.hasParam("NeedsActiveDevice"));
+        }
         return result;
     }
     public final boolean addStaticAbility(StaticAbility stab) {
@@ -747,6 +762,9 @@ public class CardState implements GameObject, IHasSVars, ITranslatable {
         }
 
         card.updateReplacementEffects(result, this, rulesHost);
+        if (!card.isDeviceActive()) {
+            result.removeIf(replacement -> replacement.hasParam("NeedsActiveDevice"));
+        }
 
         if (!rulesHost) {
             return result;
