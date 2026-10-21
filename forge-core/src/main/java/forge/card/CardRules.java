@@ -815,9 +815,22 @@ public final class CardRules implements ICardCharacteristics {
                     }
                     break;
 
+
                 case 'O':
                     if ("Oracle".equals(key)) {
                         face.setOracleText(value);
+                    } else if ("Overtypes".equals(key)) {
+                        if (face.getType() == null) {
+                            throw new IllegalArgumentException(
+                                    "Overtypes must come after Types"
+                            );
+                        }
+
+                        if (value != null) {
+                            for (String overtype : value.split(",")) {
+                                face.getType().addOvertype(overtype);
+                            }
+                        }
                     }
                     break;
 

@@ -113,6 +113,7 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         Elite("lblElite"),
         Host("lblHost"),
         Legendary("lblLegendary"),
+        Unique("lblUnique"),
         Snow("lblSnow"),
         Ongoing("lblOngoing"),
         World("lblWorld");
@@ -148,6 +149,7 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
     protected final Set<CoreType> coreTypes = EnumSet.noneOf(CoreType.class);
     protected final Set<Supertype> supertypes = EnumSet.noneOf(Supertype.class);
     protected final Set<String> subtypes = Sets.newLinkedHashSet();
+    protected final Set<String> overtypes = Sets.newLinkedHashSet();
     protected boolean allCreatureTypes = false;
     protected final Set<String> excludedCreatureSubtypes = Sets.newLinkedHashSet();
 
@@ -208,6 +210,9 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         if (coreTypes.addAll(type.coreTypes)) { changed = true; }
         if (supertypes.addAll(type.supertypes)) { changed = true; }
         if (subtypes.addAll(type.subtypes)) { changed = true; }
+        if (overtypes.addAll(type.overtypes)) {
+            changed = true;
+        }
         sanisfySubtypes();
         return changed;
     }
@@ -216,6 +221,7 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         if (Iterables.addAll(coreTypes, type.getCoreTypes())) { changed = true; }
         if (Iterables.addAll(supertypes, type.getSupertypes())) { changed = true; }
         if (Iterables.addAll(subtypes, type.getSubtypes())) { changed = true; }
+        if (Iterables.addAll(overtypes, type.getOvertypes())) { changed = true; }
         sanisfySubtypes();
         return changed;
     }
@@ -225,6 +231,9 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         if (coreTypes.removeAll(type.getCoreTypes())) { changed = true; }
         if (supertypes.removeAll(type.getSupertypes())) { changed = true; }
         if (subtypes.removeAll(type.getSubtypes())) { changed = true; }
+
+        if (overtypes.removeAll(type.getOvertypes())) { changed = true; }
+
         if (changed) {
             sanisfySubtypes();
             calculatedType = null;
@@ -238,6 +247,7 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         coreTypes.clear();
         supertypes.clear();
         subtypes.clear();
+        overtypes.clear();
         calculatedType = null;
     }
 
@@ -288,9 +298,14 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         return changed;
     }
 
+
     @Override
     public boolean isEmpty() {
-        return coreTypes.isEmpty() && supertypes.isEmpty() && subtypes.isEmpty() && excludedCreatureSubtypes.isEmpty();
+        return coreTypes.isEmpty()
+                && supertypes.isEmpty()
+                && subtypes.isEmpty()
+                && overtypes.isEmpty()
+                && excludedCreatureSubtypes.isEmpty();
     }
 
     @Override
@@ -305,6 +320,29 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
     public Collection<String> getSubtypes() {
         return subtypes;
     }
+
+    public boolean addOvertype(String overtype) {
+        if (overtype == null || overtype.isBlank()) {
+            return false;
+        }
+
+        boolean changed = overtypes.add(overtype.trim());
+
+        if (changed) {
+            calculatedType = null;
+        }
+
+        return changed;
+    }
+
+    public boolean hasOvertype(String overtype) {
+        return overtypes.contains(overtype);
+    }
+
+    public Collection<String> getOvertypes() {
+        return Collections.unmodifiableSet(overtypes);
+    }
+
 
     @Override
     public Iterable<String> getExcludedCreatureSubTypes() {
@@ -364,6 +402,10 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
             return false;
         }
         if (hasSubtype(t)) {
+            return true;
+        }
+
+        if (hasOvertype(t)) {
             return true;
         }
 
@@ -639,6 +681,9 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         for (final CoreType ct : coreTypes) {
             types.add(ct.name());
         }
+
+        types.addAll(overtypes);
+
         return types;
     }
 
@@ -854,6 +899,8 @@ public final class CardType implements Comparable<CardType>, CardTypeView {
         result.coreTypes.addAll(b.coreTypes);
         result.subtypes.addAll(a.subtypes);
         result.subtypes.addAll(b.subtypes);
+        result.overtypes.addAll(a.overtypes);
+        result.overtypes.addAll(b.overtypes);
         return result;
     }
 

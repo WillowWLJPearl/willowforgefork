@@ -13,6 +13,10 @@ public interface CardTypeView extends Serializable {
     Collection<CoreType> getCoreTypes();
     Collection<Supertype> getSupertypes();
     Collection<String> getSubtypes();
+
+    Collection<String> getOvertypes();
+    boolean hasOvertype(String overtype);
+
     Iterable<String> getExcludedCreatureSubTypes();
 
     Set<String> getCreatureTypes();

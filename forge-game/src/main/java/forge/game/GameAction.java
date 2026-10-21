@@ -673,6 +673,11 @@ public class GameAction {
             copied.clearControllers();
         }
 
+
+        if (toBattlefield && !suppress) {
+            UniqueRules.exileOtherCopies(game, copied);
+        }
+
         return copied;
     }
 
