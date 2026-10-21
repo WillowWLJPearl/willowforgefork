@@ -651,6 +651,23 @@ public final class CardRules implements ICardCharacteristics {
          * @return the card
          */
         public final CardRules getCard() {
+            // Unique is a supertype with two triggered abilities. Both use the
+            // normal trigger stack so effects that counter triggered abilities
+            // can respond to them. Neither effect resolves immediately.
+            for (CardFace face : faces) {
+                if (face == null || face.getType() == null
+                        || !face.getType().hasSupertype(CardType.Supertype.Unique)) {
+                    continue;
+                }
+                face.addSVar("UniqueRuleExile", "DB$ UniqueExile | SpellDescription$ Exile all other copies of CARDNAME.");
+                face.addTrigger("Mode$ SpellCast | ValidCard$ Card.Self | TriggerZones$ Stack"
+                        + " | Execute$ UniqueRuleExile"
+                        + " | TriggerDescription$ Whenever you cast CARDNAME, exile all other copies of it.");
+                face.addTrigger("Mode$ ChangesZone | Origin$ Any | ExcludedOrigins$ Battlefield"
+                        + " | Destination$ Battlefield | ValidCard$ Card.Self"
+                        + " | Execute$ UniqueRuleExile"
+                        + " | TriggerDescription$ When CARDNAME enters the battlefield from another zone, exile all other copies of it.");
+            }
             CardAiHints cah = new CardAiHints(removedFromAIDecks, removedFromRandomDecks, removedFromNonCommanderDecks, hints, needs, has);
             if (null != faces[0]) faces[0].assignMissingFields();
             else assert(placeholderFaces != null);
