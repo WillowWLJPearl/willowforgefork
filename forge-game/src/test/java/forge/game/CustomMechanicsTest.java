@@ -6,6 +6,9 @@ import forge.game.keyword.Keyword;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.io.IOException;
 
 import static org.testng.Assert.*;
 
@@ -124,6 +127,27 @@ public class CustomMechanicsTest {
         final List<String> abilities = new java.util.ArrayList<>();
         card.getMainPart().getAbilities().forEach(abilities::add);
         assertTrue(abilities.get(0).contains("InterfaceDevice"));
+    }
+
+    @Test
+    public void sparringFiendCardScriptAndSetRegistration() throws IOException {
+        Path res = Path.of("..", "forge-gui", "res");
+        if (!Files.isDirectory(res)) {
+            res = Path.of("forge-gui", "res");
+        }
+        final Path cardFile = res.resolve("cardsfolder/s/sparring_fiend.txt");
+        final CardRules card = CardRules.fromScript(Files.readAllLines(cardFile));
+
+        assertEquals(card.getName(), "Sparring Fiend");
+        assertTrue(card.getType().hasSubtype("Vampire"));
+        final List<String> keywords = new java.util.ArrayList<>();
+        card.getMainPart().getKeywords().forEach(keywords::add);
+        assertTrue(keywords.contains("First Strike"));
+        assertTrue(keywords.contains("Multistrike:2"));
+
+        final String edition = Files.readString(res.resolve("editions/Unique Societies.txt"));
+        assertTrue(edition.contains("Code=WUS"));
+        assertTrue(edition.contains("1 U Sparring Fiend"));
     }
 
     @Test
