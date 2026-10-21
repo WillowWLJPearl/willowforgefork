@@ -249,6 +249,14 @@ public abstract class GameEntity implements GameObject, IIdentifiable {
             return attach.getDisplayName() + " is phased out";
         }
 
+        if (attach.getType().hasOvertype("Memonic Device")) {
+            if (!(this instanceof Card)
+                    || !(((Card) this).getType().hasOvertype("Humanoid")
+                        || hasKeyword(Keyword.DEVICE_ATTUNED))) {
+                return "Memonic Devices must be interfaced with a Humanoid or Device-attuned creature";
+            }
+        }
+
         if (attach.isAura()) {
             String msg = cantBeEnchantedByMsg(attach);
             if (msg != null) {
