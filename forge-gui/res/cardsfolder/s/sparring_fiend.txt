@@ -1,0 +1,7 @@
+Name:Sparring Fiend
+ManaCost:2 R
+Types:Creature Vampire
+PT:2/3
+K:First Strike
+K:Multistrike:2
+Oracle:First strike, Multistrike 2 (When declaring attackers, you may choose up to two defending players or defending objects for this creature to attack. Choose the order in which it attacks them.)
