@@ -30,6 +30,8 @@ import forge.game.ability.effects.SkipPhaseEffect;
 import forge.game.card.*;
 import forge.game.combat.Combat;
 import forge.game.combat.CombatUtil;
+import forge.game.keyword.Keyword;
+import forge.util.collect.FCollection;
 import forge.game.cost.CostEnlist;
 import forge.game.cost.CostExert;
 import forge.game.event.*;
@@ -88,6 +90,21 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
     private transient Player pPlayerPriority = null;
     private transient Player pFirstPriority = null;
     private transient Combat combat = null;
+
+    // Each extra attack gets its own complete combat, including blockers and
+    // combat damage. An attacker removed from the battlefield cannot continue.
+    private static final class MultistrikeAttack {
+        private final Card attacker;
+        private final GameEntity defender;
+
+        private MultistrikeAttack(final Card attacker, final GameEntity defender) {
+            this.attacker = attacker;
+            this.defender = defender;
+        }
+    }
+
+    private final transient Deque<MultistrikeAttack> multistrikePending = new ArrayDeque<>();
+    private transient MultistrikeAttack multistrikeFollowup;
     private boolean skipDamageSteps = false;
     private boolean bRepeatCleanup = false;
 
@@ -345,6 +362,10 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
                     break;
 
                 case COMBAT_END:
+                    // Additional ordered Multistrike attacks are independent
+                    // combats. If the creature died during this combat it has
+                    // no later attack, even when its defender is still legal.
+                    queueNextMultistrikeCombat();
                     // End Combat always happens
                     for (final Card c : game.getCardsIn(ZoneType.Battlefield)) {
                         c.onEndOfCombat(playerTurn);
@@ -534,9 +555,22 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
     }
 
     private void declareAttackersTurnBasedAction() {
+        final MultistrikeAttack forced = multistrikeFollowup;
+        multistrikeFollowup = null;
         final Player whoDeclares = Objects.requireNonNullElse(playerTurn.getDeclaresAttackers(), playerTurn);
 
-        if (CombatUtil.canAttack(playerTurn)) {
+        if (forced != null) {
+            // Subsequent attacks do not re-tap the creature or invite other
+            // creatures to join. The blocker declaration and damage steps run
+            // exactly as in an ordinary combat.
+            if (canPerformMultistrikeAttack(forced)) {
+                combat.addAttacker(forced.attacker, forced.defender);
+                if (!CombatUtil.checkPropagandaEffects(game, forced.attacker,
+                        combat, Collections.emptyList())) {
+                    combat.removeFromCombat(forced.attacker);
+                }
+            }
+        } else if (CombatUtil.canAttack(playerTurn)) {
             boolean success = false;
             do {
                 if (game.isGameOver()) { // they just like to close window at any moment
@@ -619,6 +653,10 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
             return;
         }
 
+        if (forced == null) {
+            chooseMultistrikeDefenders(whoDeclares);
+        }
+
         // Reset all active Triggers
         game.getTriggerHandler().resetActiveTriggers();
 
@@ -656,6 +694,79 @@ public class PhaseHandler implements java.io.Serializable, IHasForgeLog {
         game.getTriggerHandler().resetActiveTriggers();
         game.updateCombatForView();
         game.fireEvent(new GameEventCombatChanged());
+    }
+
+    /**
+     * Collect additional defending players / permanents in the order chosen by
+     * the attacking player. The ordinary attack is the first of the N attacks.
+     */
+    private void chooseMultistrikeDefenders(final Player whoDeclares) {
+        for (final Card attacker : combat.getAttackers()) {
+            if (!attacker.hasKeyword(Keyword.MULTISTRIKE)) {
+                continue;
+            }
+            final int maxAdditional = Math.max(0, attacker.getKeywordMagnitude(Keyword.MULTISTRIKE) - 1);
+            if (maxAdditional == 0) {
+                continue;
+            }
+            final GameEntity firstDefender = combat.getDefenderByAttacker(attacker);
+            final FCollection<GameEntity> available = new FCollection<>();
+            for (final GameEntity defender : combat.getDefenders()) {
+                if (!defender.equals(firstDefender)
+                        && CombatUtil.canAttackNextTurn(attacker, defender)) {
+                    available.add(defender);
+                }
+            }
+            if (available.isEmpty()) {
+                continue;
+            }
+            final SpellAbility choiceAbility = new SpellAbility.EmptySa(attacker, attacker.getController());
+            final List<GameEntity> ordered = whoDeclares.getController().chooseEntitiesForEffect(
+                    available, 0, Math.min(maxAdditional, available.size()), null,
+                    choiceAbility, "Choose Multistrike defenders in attack order for " + attacker,
+                    playerTurn, null);
+            if (ordered == null) {
+                continue;
+            }
+            final Set<GameEntity> unique = new HashSet<>();
+            for (final GameEntity defender : ordered) {
+                if (unique.add(defender) && available.contains(defender)
+                        && unique.size() <= maxAdditional) {
+                    multistrikePending.addLast(new MultistrikeAttack(attacker, defender));
+                }
+            }
+        }
+    }
+
+    private boolean canPerformMultistrikeAttack(final MultistrikeAttack attack) {
+        final Card c = attack.attacker;
+        return c.isInPlay() && c.isCreature() && !c.isPhasedOut()
+                && c.getController() == playerTurn
+                && c.hasKeyword(Keyword.MULTISTRIKE)
+                && combat.getDefenders().contains(attack.defender)
+                && CombatUtil.canAttackNextTurn(c, attack.defender);
+    }
+
+    private void queueNextMultistrikeCombat() {
+        if (multistrikePending.isEmpty() || game.isGameOver()) {
+            return;
+        }
+        while (!multistrikePending.isEmpty()) {
+            final MultistrikeAttack next = multistrikePending.removeFirst();
+            if (!canPerformMultistrikeAttack(next)) {
+                continue;
+            }
+            multistrikeFollowup = next;
+            // Every attack has its own attacker declaration, blocker
+            // declaration, first strike step, regular damage and combat end.
+            // An ordered attack is canceled if its attacker left the field.
+            addExtraPhase(PhaseType.COMBAT_END, Arrays.asList(
+                    PhaseType.COMBAT_BEGIN, PhaseType.COMBAT_DECLARE_ATTACKERS,
+                    PhaseType.COMBAT_DECLARE_BLOCKERS,
+                    PhaseType.COMBAT_FIRST_STRIKE_DAMAGE, PhaseType.COMBAT_DAMAGE,
+                    PhaseType.COMBAT_END), PhaseType.MAIN2);
+            return;
+        }
     }
 
     private void declareBlockersTurnBasedAction() {
