@@ -102,6 +102,31 @@ public class CustomMechanicsTest {
     }
 
     @Test
+    public void deviceAttunedKeywordAndInterfaceScriptAreAvailable() {
+        assertSame(Keyword.smartValueOf("Device-attuned"), Keyword.DEVICE_ATTUNED);
+        final CardRules card = CardRules.fromScript(List.of(
+                "Name:Device Technician",
+                "ManaCost:1 U",
+                "Types:Creature Human Wizard",
+                "Overtypes:Humanoid",
+                "PT:1/2",
+                "K:Device-attuned",
+                "A:AB$ InterfaceDevice | Cost$ 1 | ValidTgts$ Memonic Device"
+                        + " | TargetMin$ 1 | TargetMax$ 1"
+                        + " | SpellDescription$ Interface with a device.",
+                "Oracle:Device-attuned"
+        ));
+        assertTrue(card.getType().hasOvertype("Humanoid"));
+        assertFalse(card.getType().hasSubtype("Humanoid"));
+        final List<String> keywords = new java.util.ArrayList<>();
+        card.getMainPart().getKeywords().forEach(keywords::add);
+        assertTrue(keywords.contains("Device-attuned"));
+        final List<String> abilities = new java.util.ArrayList<>();
+        card.getMainPart().getAbilities().forEach(abilities::add);
+        assertTrue(abilities.get(0).contains("InterfaceDevice"));
+    }
+
+    @Test
     public void piercingKeywordIsRegistered() {
         assertSame(Keyword.smartValueOf("PIERCING"), Keyword.PIERCING);
     }
