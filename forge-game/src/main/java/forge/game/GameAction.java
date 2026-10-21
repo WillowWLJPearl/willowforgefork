@@ -674,10 +674,6 @@ public class GameAction {
         }
 
 
-        if (toBattlefield && !suppress) {
-            UniqueRules.exileOtherCopies(game, copied);
-        }
-
         return copied;
     }
 
