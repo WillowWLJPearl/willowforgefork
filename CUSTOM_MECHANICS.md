@@ -27,9 +27,9 @@ K:Piercing
 
 During each combat damage step in which it assigns damage, this attacker assigns its **full combat damage** to the player/planeswalker/battle it attacks and **each creature currently blocking it**, even when blocked. Normal combat damage, prevention, replacement and damage consequences still apply. This is not trample and does not divide its damage between recipients.
 
-## INACTIVE and device activation (functional core; integration tests needed)
+## INACTIVE, Activate and Device-attuned (implemented; gameplay tests needed)
 
-Devices begin *inactive* as new card instances. `Inactive:` in a card script marks the following **activated abilities, triggers, static abilities and replacement effects** as disabled until the device is active. The activation ability itself must appear **above** the divider so it remains usable:
+Devices begin inactive. `Inactive:` marks any following activated abilities, triggers, static abilities, replacement effects and keywords as disabled until the device is active. Activation abilities must be **above** the divider so they remain available.
 
 ```text
 Name:Example Device
@@ -38,23 +38,40 @@ Types:Artifact
 Overtypes:Memonic Device
 K:Inactive
 A:AB$ ActivateDevice | Cost$ 1 | SpellDescription$ Activate CARDNAME.
+A:AB$ InterfaceDevice | Cost$ 1 | ValidTgts$ Humanoid | TargetMin$ 1 | TargetMax$ 1 | SpellDescription$ Interface with target Humanoid.
 Inactive:
 A:AB$ Draw | Cost$ T | NumCards$ 1 | SpellDescription$ Draw a card.
+K:Flying
 Oracle:Inactive — The following abilities do nothing until this device is activated.
 ```
 
-The `ActivateDevice` API sets the device to its active state when the ability resolves; `Deactivate$ True` on the API changes it back to inactive. With `ValidTgts$ Memonic Device`, it activates the targeted device(s) instead of its host, so cards can interface with other devices. Example: `A:AB$ ActivateDevice | Cost$ 1 T | ValidTgts$ Memonic Device | TargetMin$ 1 | TargetMax$ 1 | SpellDescription$ Activate target Memonic Device.` Activating refreshes available abilities and triggers. **Keyword-granted abilities below the divider are not yet automatically gated.** Interaction with Device-attuned and attachment/interfacing rules still needs implementation.
+`ActivateDevice` makes the source device active on resolution. With `ValidTgts$ Memonic Device`, it instead activates a targeted device. `Deactivate$ True` turns the device inactive again. Activation or deactivation updates its available abilities, triggers, keywords and static effects.
 
-## Multistrike N (syntax only, NOT gameplay-complete)
+`InterfaceDevice` links a Memonic Device to an eligible user (a Humanoid or a creature with `K:Device-attuned`). The device becomes an attachment to that user. When a device with a user is activated, it taps that user. A Device-attuned user **untaps instead of tapping**. An already tapped unattuned user cannot operate the device again without untapping.
 
 ```text
-K:Multistrike:2
+Name:Masterful Device User
+ManaCost:1 U
+Types:Creature Human Wizard
+Overtypes:Humanoid
+PT:1/2
+K:Device-attuned
+A:AB$ InterfaceDevice | Cost$ 1 | ValidTgts$ Memonic Device | TargetMin$ 1 | TargetMax$ 1 | SpellDescription$ Interface with target Memonic Device.
+Oracle:Device-attuned
 ```
 
-The keyword and its reminder text are registered. The desired rule is to choose up to N different defending players/objects when declaring attackers, choose their order, and have separate attacks with each defender being able to block. If the attacking creature is destroyed in an earlier combat, it cannot continue to a later defender.
+Device-active state is stored on the card instance and does not survive its replacement after changing zones.
 
-**These combat changes are NOT yet implemented.** Forge's current `Combat` data model assigns a single defender and blocking band to an attacker. Supporting separate sequential combats needs changes to attacker selection, turn/combat sequencing, per-defender blocking and damage, and UI/AI. Do not treat the registered keyword as functioning in a match.
+## Multistrike N (ordered combat-round implementation; gameplay tests needed)
+
+```text
+K:Multistrike:3
+```
+
+When the creature attacks, its controller can select **up to N different defending players, planeswalkers or battles**, including the initial defender, and choose their attack order. After the first attack's damage, the combat loops through fresh attacker, blocker, and first-strike/regular damage steps for each remaining defender. Each defending player independently declares blockers. Begin/end-of-combat triggers occur only once for the overall combat. This uses the native combat damage engine for each defender. If the attacking creature leaves the battlefield or ceases to be able to attack, its remaining queued attacks do not occur.
+
+The implementation is present in `forge-game/src/main/java/forge/game/phase/PhaseHandler.java`, but still needs a live-game integration test covering multiple defenders, blocker timing, priority, replacement effects, and removal between attacks.
 
 ## Verification
 
-The Java 17 `Custom MTG mechanics tests` GitHub workflow compiles and runs the `forge-game` test suite. Gameplay testing for triggered-ability countering, entering from nonbattlefield zones, Piercing with multiple blockers, and device-activation timing is still needed.
+The `Custom MTG mechanics tests` GitHub Actions workflow compiles and runs the Java 17 `forge-game` test suite. These are parser and rules-engine regression tests; they do **not** constitute proof that every gameplay edge case works. In-game tests are still needed for countering Unique, combat with multiple blocking creatures, timing of Multistrike subattacks, and activation/interfacing of devices.
