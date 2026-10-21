@@ -523,9 +523,13 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         if (active && getDeviceUser() != null) {
             final Card user = getDeviceUser();
             if (user.hasKeyword(Keyword.DEVICE_ATTUNED)) {
+                // Attuned users replace the usual tap with an untap.
                 user.untap();
-            } else if (!user.isTapped()) {
-                user.tap(false, null, getController());
+            } else if (user.isTapped()
+                    || !user.tap(false, null, getController())) {
+                // A device cannot activate via an already tapped user.
+                // A prevention/replacement effect can also stop the tap.
+                return;
             }
         }
         deviceActive = active;
