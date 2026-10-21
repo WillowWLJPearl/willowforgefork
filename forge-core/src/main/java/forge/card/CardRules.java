@@ -410,7 +410,7 @@ public final class CardRules implements ICardCharacteristics {
 
     public boolean canBeBrawlCommander() {
         CardType type = mainPart.getType();
-        if (!type.isLegendary()) {
+        if (!type.isLegendary() && !mainPart.getOracleText().contains("can be your commander")) {
             return false;
         }
         if (canBeCreature() || type.isPlaneswalker()) {
