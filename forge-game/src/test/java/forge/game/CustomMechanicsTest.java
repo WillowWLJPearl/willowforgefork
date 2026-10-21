@@ -70,6 +70,33 @@ public class CustomMechanicsTest {
     }
 
     @Test
+    public void inactiveKeywordIsNotGrantedUntilActivation() {
+        final CardRules card = CardRules.fromScript(List.of(
+                "Name:Test Device with Flying",
+                "ManaCost:3",
+                "Types:Artifact Creature Golem",
+                "Overtypes:Memonic Device",
+                "PT:2/2",
+                "Inactive:",
+                "K:Flying",
+                "Oracle:Test"
+        ));
+        final List<String> keywords = new java.util.ArrayList<>();
+        card.getMainPart().getKeywords().forEach(keywords::add);
+        assertFalse(keywords.contains("Flying"));
+
+        boolean gated = false;
+        for (final java.util.Map.Entry<String, String> variable
+                : card.getMainPart().getVariables()) {
+            if (variable.getKey().startsWith("__InactiveKeyword")) {
+                assertEquals(variable.getValue(), "Flying");
+                gated = true;
+            }
+        }
+        assertTrue(gated, "Inactive keyword must be retained for activation");
+    }
+
+    @Test
     public void multistrikeKeywordIsRecognized() {
         assertSame(Keyword.smartValueOf("Multistrike"), Keyword.MULTISTRIKE);
     }
