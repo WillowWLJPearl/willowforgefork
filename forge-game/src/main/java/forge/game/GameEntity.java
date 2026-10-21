@@ -241,7 +241,8 @@ public abstract class GameEntity implements GameObject, IIdentifiable {
             return attach.getDisplayName() + " can't attach to itself";
         }
 
-        if (attach.isCreature() && !attach.hasKeyword(Keyword.RECONFIGURE)) {
+        if (attach.isCreature() && !attach.hasKeyword(Keyword.RECONFIGURE)
+                && !attach.getType().hasOvertype("Memonic Device")) {
             return attach.getDisplayName() + " is a creature without reconfigure";
         }
 
