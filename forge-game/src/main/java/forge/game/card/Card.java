@@ -488,7 +488,26 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     // A device starts inactive each time it becomes a new card instance.
     // This is separate from tapping, transforming, and face-down state.
     private boolean deviceActive;
+    private Card interfacingDeviceUser;
     private final List<KeywordInterface> deviceGrantedKeywords = new ArrayList<>();
+
+    /** The creature currently interfacing with this Memonic Device. */
+    public Card getDeviceUser() {
+        if (interfacingDeviceUser == null || !interfacingDeviceUser.isInPlay()) {
+            return null;
+        }
+        return interfacingDeviceUser;
+    }
+
+    public void setDeviceUser(final Card user) {
+        if (user != null && (!getType().hasOvertype("Memonic Device")
+                || !(user.getType().hasOvertype("Humanoid")
+                    || user.hasKeyword(Keyword.DEVICE_ATTUNED)))) {
+            return;
+        }
+        interfacingDeviceUser = user;
+        updateStateForView();
+    }
 
     public boolean isDeviceActive() {
         return deviceActive;
@@ -497,6 +516,16 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
     public void setDeviceActive(final boolean active) {
         if (deviceActive == active) {
             return;
+        }
+        // An interfaced device uses its user on activation. Attuned users
+        // untap instead of tapping, as their keyword specifies.
+        if (active && getDeviceUser() != null) {
+            final Card user = getDeviceUser();
+            if (user.hasKeyword(Keyword.DEVICE_ATTUNED)) {
+                user.untap();
+            } else if (!user.isTapped()) {
+                user.tap(false, null, getController());
+            }
         }
         deviceActive = active;
         if (active) {
