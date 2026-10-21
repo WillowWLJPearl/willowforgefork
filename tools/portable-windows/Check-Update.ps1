@@ -41,7 +41,10 @@ try {
     }
 
     # Only files from the official release are overlaid. userdata/ is untouched.
-    Copy-Item -LiteralPath (Join-Path $newRoot '*') -Destination $root -Force -Recurse
+    foreach ($file in (Get-ChildItem -LiteralPath $newRoot -Force)) {
+        if ($file.Name -eq 'userdata') { continue }
+        Copy-Item -LiteralPath $file.FullName -Destination $root -Force -Recurse
+    }
     Set-Content -LiteralPath $tagPath -Encoding Ascii -Value $latest
     Write-Host "Updated to $latest."
 } catch {
