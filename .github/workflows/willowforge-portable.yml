@@ -1,0 +1,84 @@
+name: Build portable WillowForge for friends
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'forge-core/**'
+      - 'forge-game/**'
+      - 'forge-ai/**'
+      - 'forge-gui/**'
+      - 'forge-gui-mobile-dev/**'
+      - 'forge-gui-neo/**'
+      - 'tools/portable-windows/**'
+      - '.github/workflows/willowforge-portable.yml'
+      - 'pom.xml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: willowforge-portable
+  cancel-in-progress: false
+
+jobs:
+  portable-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Compile NeoForge and all its dependencies
+        shell: pwsh
+        run: mvn -B -DskipTests -pl forge-gui-neo -am package
+
+      - name: Assemble self-contained Windows ZIP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dist = Join-Path $env:GITHUB_WORKSPACE 'WillowForge'
+          $archive = Join-Path $env:GITHUB_WORKSPACE 'WillowForge-Windows.zip'
+          New-Item -ItemType Directory -Force -Path "$dist/app", "$dist/lib", "$dist/forge-gui" | Out-Null
+
+          $jar = @(Get-ChildItem -Path 'forge-gui-neo/target/*.jar' | Where-Object { $_.Name -notmatch '(-sources|-javadoc|-tests)\\.jar$' } | Select-Object -First 1)
+          if ($jar.Count -ne 1) { throw 'NeoForge main JAR not found' }
+          Copy-Item -LiteralPath $jar[0].FullName -Destination "$dist/app/" -Force
+          $libraries = @(Get-ChildItem -Path 'forge-gui-neo/target/lib/*.jar')
+          if ($libraries.Count -lt 5) { throw 'Maven runtime libraries not copied' }
+          Copy-Item -Path 'forge-gui-neo/target/lib/*.jar' -Destination "$dist/lib/" -Force
+
+          # Forge's card database and other resources live outside the Java JARs.
+          Copy-Item -Path 'forge-gui/res' -Destination "$dist/forge-gui/" -Recurse -Force
+          Copy-Item -Path 'tools/portable-windows/*' -Destination $dist -Force
+
+          # Bundle a Windows runtime so guests need no Java installation.
+          & "$env:JAVA_HOME/bin/jlink.exe" --add-modules ALL-MODULE-PATH --output "$dist/runtime" --strip-debug --no-man-pages --no-header-files --compress 2
+          if ($LASTEXITCODE -ne 0) { throw 'jlink failed' }
+
+          $tag = "friends-$env:GITHUB_RUN_NUMBER"
+          Set-Content -LiteralPath "$dist/BUILD_TAG.txt" -Value $tag -Encoding Ascii
+          Compress-Archive -Path $dist -DestinationPath $archive -CompressionLevel Optimal
+          if (-not (Test-Path -LiteralPath $archive)) { throw 'ZIP not created' }
+          Write-Host "Built $archive ($tag)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WillowForge-Windows
+          path: WillowForge-Windows.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish public download for friends
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "friends-$env:GITHUB_RUN_NUMBER"
+          gh release create $tag "WillowForge-Windows.zip" --latest --target "$env:GITHUB_SHA" --title "WillowForge for friends ($tag)" --notes "Portable Windows build of this fork. Download WillowForge-Windows.zip, extract and run WillowForge/Play.cmd. New versions download automatically when Play.cmd starts. No Java or IntelliJ required."
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed' }
