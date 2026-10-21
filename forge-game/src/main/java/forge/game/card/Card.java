@@ -485,6 +485,27 @@ public class Card extends GameEntity implements Comparable<Card>, IHasSVars, ITr
         getGame().updateCombatForView();
     }
 
+    // A device starts inactive each time it becomes a new card instance.
+    // This is separate from tapping, transforming, and face-down state.
+    private boolean deviceActive;
+
+    public boolean isDeviceActive() {
+        return deviceActive;
+    }
+
+    public void setDeviceActive(final boolean active) {
+        if (deviceActive == active) {
+            return;
+        }
+        deviceActive = active;
+        if (getGame() != null) {
+            getGame().getAction().checkStaticAbilities();
+            getGame().getTriggerHandler().clearActiveTriggers(this, null);
+            getGame().getTriggerHandler().registerActiveTrigger(this, false);
+        }
+        updateStateForView();
+    }
+
     public void updateStateForView() {
         view.updateState(this);
     }
