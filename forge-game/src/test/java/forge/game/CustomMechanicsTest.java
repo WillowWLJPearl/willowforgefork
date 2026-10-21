@@ -45,6 +45,36 @@ public class CustomMechanicsTest {
     }
 
     @Test
+    public void inactiveSectionsGateFollowingAbilities() {
+        final CardRules card = CardRules.fromScript(List.of(
+                "Name:Test Device",
+                "ManaCost:2",
+                "Types:Artifact",
+                "Overtypes:Memonic Device",
+                "A:AB$ ActivateDevice | Cost$ 1 | SpellDescription$ Activate this device.",
+                "Inactive:",
+                "A:AB$ Draw | Cost$ T | NumCards$ 1 | SpellDescription$ Draw a card.",
+                "T:Mode$ Phase | Phase$ Upkeep | Execute$ DrawOne | TriggerDescription$ Draw.",
+                "SVar:DrawOne:DB$ Draw | NumCards$ 1",
+                "Oracle:Test"
+        ));
+        final List<String> abilities = new java.util.ArrayList<>();
+        card.getMainPart().getAbilities().forEach(abilities::add);
+        assertEquals(abilities.size(), 2);
+        assertFalse(abilities.get(0).contains("NeedsActiveDevice$ True"));
+        assertTrue(abilities.get(1).contains("NeedsActiveDevice$ True"));
+
+        final List<String> triggers = new java.util.ArrayList<>();
+        card.getMainPart().getTriggers().forEach(triggers::add);
+        assertTrue(triggers.get(0).contains("NeedsActiveDevice$ True"));
+    }
+
+    @Test
+    public void multistrikeKeywordIsRecognized() {
+        assertSame(Keyword.smartValueOf("Multistrike"), Keyword.MULTISTRIKE);
+    }
+
+    @Test
     public void piercingKeywordIsRegistered() {
         assertSame(Keyword.smartValueOf("PIERCING"), Keyword.PIERCING);
     }
