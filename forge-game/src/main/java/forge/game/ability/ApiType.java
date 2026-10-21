@@ -207,6 +207,7 @@ public enum ApiType {
     UnlockDoor (UnlockDoorEffect.class),
     UniqueExile (UniqueExileEffect.class),
     ActivateDevice (ActivateDeviceEffect.class),
+    InterfaceDevice (InterfaceDeviceEffect.class),
     Untap (UntapEffect.class),
     UntapAll (UntapAllEffect.class),
     Venture (VentureEffect.class),
