@@ -69,6 +69,9 @@ public class TriggerChangesZone extends Trigger {
      * @param runParams*/
     @Override
     public final boolean performTest(final Map<AbilityKey, Object> runParams) {
+        if (hasParam("RequireOrigin") && runParams.get(AbilityKey.Origin) == null) {
+            return false;
+        }
         if (hasParam("Origin")) {
             if (!getParam("Origin").equals("Any")) {
                 if (getParam("Origin") == null) {
