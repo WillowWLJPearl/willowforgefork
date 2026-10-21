@@ -381,7 +381,6 @@ public class MagicStack /* extends MyObservable */ implements Iterable<SpellAbil
                     activator.incCommanderCast(source);
                 }
                 game.getTriggerHandler().runTrigger(TriggerType.SpellCast, runParams, true);
-                UniqueRules.exileOtherCopies(game, source);
             }
 
             // Run AbilityCast triggers
