@@ -1,0 +1,21 @@
+name: Custom MTG mechanics tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  forge-game:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compile and run rules-engine tests
+        run: mvn -B -pl forge-game -am test -Dfile.encoding=UTF-8
