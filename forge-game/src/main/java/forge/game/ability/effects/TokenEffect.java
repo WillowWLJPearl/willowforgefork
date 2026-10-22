@@ -17,8 +17,18 @@
  */
 package forge.game.ability.effects;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import forge.StaticData;
+import forge.game.card.CardFactory;
+import forge.game.card.TokenCreateTable;
+import forge.item.PaperToken;
+import forge.token.TokenDb;
+import forge.util.Aggregates;
 
 import forge.util.Lang;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +44,35 @@ import forge.game.player.Player;
 import forge.game.spellability.SpellAbility;
 
 public class TokenEffect extends TokenEffectBase {
+    private static TokenDb cachedRandomArtifactTokenDb;
+    private static List<PaperToken> cachedRandomArtifactTokens;
+
+    /**
+     * One entry per predefined token script (not per set or artwork).
+     * Copy-effect tokens are not token definitions and are excluded.
+     */
+    private static synchronized List<PaperToken> getRandomArtifactTokens() {
+        TokenDb database = StaticData.instance().getAllTokens();
+        if (cachedRandomArtifactTokens == null || cachedRandomArtifactTokenDb != database) {
+            database.preloadTokens();
+            Map<String, PaperToken> byScript = new LinkedHashMap<>();
+            for (PaperToken token : database.getAllTokens()) {
+                if (!token.getRules().getType().isArtifact()
+                        || token.getName().equalsIgnoreCase("Copy Token")) {
+                    continue;
+                }
+                String script = token.getImageKey(0);
+                int editionSeparator = script.indexOf('|');
+                if (editionSeparator >= 0) {
+                    script = script.substring(0, editionSeparator);
+                }
+                byScript.putIfAbsent(script, token);
+            }
+            cachedRandomArtifactTokens = new ArrayList<>(byScript.values());
+            cachedRandomArtifactTokenDb = database;
+        }
+        return cachedRandomArtifactTokens;
+    }
 
     @Override
     protected String getStackDescription(SpellAbility sa) {
@@ -127,8 +166,25 @@ public class TokenEffect extends TokenEffectBase {
             return;
         }
 
-        makeTokenTable(getDefinedPlayersOrTargeted(sa, "TokenOwner"), sa.getParam("TokenScript").split(","),
-                amount, false, triggerList, combatChanged, sa);
+        if (sa.hasParam("RandomArtifactToken")) {
+            List<PaperToken> candidates = getRandomArtifactTokens();
+            if (candidates.isEmpty()) {
+                return;
+            }
+            TokenCreateTable randomTokens = new TokenCreateTable();
+            for (Player owner : getDefinedPlayersOrTargeted(sa, "TokenOwner")) {
+                if (!owner.isInGame()) {
+                    continue;
+                }
+                Card prototype = CardFactory.getCard(Aggregates.random(candidates), owner, game);
+                prototype.setTokenSpawningAbility(sa);
+                randomTokens.put(owner, prototype, amount);
+            }
+            makeTokenTable(randomTokens, false, triggerList, combatChanged, sa);
+        } else {
+            makeTokenTable(getDefinedPlayersOrTargeted(sa, "TokenOwner"), sa.getParam("TokenScript").split(","),
+                    amount, false, triggerList, combatChanged, sa);
+        }
 
         if (!useZoneTable) {
             triggerList.triggerChangesZoneAll(game, sa);
