@@ -5,7 +5,7 @@ AlternateMode:Prepare
 T:Mode$ ChangesZone | Origin$ Any | Destination$ Battlefield | ValidCard$ Card.Self | Execute$ TrigGarbageToken | TriggerDescription$ When CARDNAME enters, create a random artifact token.
 SVar:TrigGarbageToken:DB$ Token | RandomArtifactToken$ True | TokenAmount$ 1 | TokenOwner$ You
 A:AB$ Mana | Cost$ Sac<1/Artifact> | Produced$ C | SpellDescription$ Sacrifice an artifact: Add {C}.
-S:Mode$ Continuous | Affected$ Creature.Rat+YouCtrl,Creature.Raccoon+YouCtrl | AddStaticAbility$ ScavengeAttack | Description$ Rats and Raccoons you control have "When this creature attacks, you may exert it. If you do, prepare target land named Garbage Heap."
+S:Mode$ Continuous | Affected$ Creature.Rat+YouCtrl,Creature.Raccoon+YouCtrl | AddStaticAbility$ ScavengeAttack | AddSVar$ TrigPrepareHeap | Description$ Rats and Raccoons you control have "When this creature attacks, you may exert it. If you do, prepare target land named Garbage Heap."
 SVar:ScavengeAttack:Mode$ OptionalAttackCost | ValidCard$ Card.Self | Trigger$ TrigPrepareHeap | Cost$ Exert<1/CARDNAME> | Description$ When this creature attacks, you may exert it. If you do, prepare target land named Garbage Heap.
 SVar:TrigPrepareHeap:DB$ AlterAttribute | ValidTgts$ Land.namedGarbage Heap+YouCtrl | Attributes$ Prepared
 DeckNeeds:Type$Rat|Raccoon
