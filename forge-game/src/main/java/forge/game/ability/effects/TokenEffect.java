@@ -74,6 +74,20 @@ public class TokenEffect extends TokenEffectBase {
         return cachedRandomArtifactTokens;
     }
 
+    /**
+     * Sample the same predefined artifact-token pool for AI simulations and
+     * other effects that need a representative random token.
+     */
+    public static Card sampleRandomArtifactToken(Player owner, SpellAbility sa) {
+        List<PaperToken> candidates = getRandomArtifactTokens();
+        if (candidates.isEmpty()) {
+            return null;
+        }
+        Card prototype = CardFactory.getCard(Aggregates.random(candidates), owner, owner.getGame());
+        prototype.setTokenSpawningAbility(sa);
+        return prototype;
+    }
+
     @Override
     protected String getStackDescription(SpellAbility sa) {
         if (sa.hasParam("SpellDescription")) {
@@ -176,9 +190,10 @@ public class TokenEffect extends TokenEffectBase {
                 if (!owner.isInGame()) {
                     continue;
                 }
-                Card prototype = CardFactory.getCard(Aggregates.random(candidates), owner, game);
-                prototype.setTokenSpawningAbility(sa);
-                randomTokens.put(owner, prototype, amount);
+                Card prototype = sampleRandomArtifactToken(owner, sa);
+                if (prototype != null) {
+                    randomTokens.put(owner, prototype, amount);
+                }
             }
             makeTokenTable(randomTokens, false, triggerList, combatChanged, sa);
         } else {
