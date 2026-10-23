@@ -182,6 +182,7 @@ public class CustomMechanicsTest {
 
         final String edition = Files.readString(res.resolve("editions/Willow Custom Cards.txt"));
         assertTrue(edition.contains("Code=WGH"));
+        assertTrue(edition.contains("Type=Custom_Set"));
         assertTrue(edition.contains("1 R Garbage Heap"));
     }
 
