@@ -1,0 +1,8 @@
+[metadata]
+Code=WGH
+Name=Willow Custom Cards
+Date=2026-10-22
+Type=Custom_Set
+
+[cards]
+1 R Garbage Heap

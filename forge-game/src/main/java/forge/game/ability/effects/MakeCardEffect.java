@@ -78,6 +78,24 @@ public class MakeCardEffect extends SpellAbilityEffect {
                 faces.addAll(parseFaces(sa, "Spellbook"));
             } else if (sa.hasParam("Choices")) {
                 faces.addAll(parseFaces(sa, "Choices"));
+            } else if (sa.hasParam("RandomArtifactManaValue")) {
+                // Alchemy: conjure a uniformly random artifact card of a specific mana value.
+                // Use unique card definitions, not printings, so reprints do not skew the pool.
+                StaticData.instance().ensureAllCardsLoaded();
+                final int manaValue = AbilityUtils.calculateAmount(source, sa.getParam("RandomArtifactManaValue"), sa);
+                if (manaValue >= 0) {
+                    List<PaperCard> artifacts = new ArrayList<>();
+                    for (PaperCard card : StaticData.instance().getCommonCards().getUniqueCards()) {
+                        if (card.getRules().getType().isArtifact()
+                                && card.getRules().getManaCost().getCMC() == manaValue) {
+                            artifacts.add(card);
+                        }
+                    }
+                    if (!artifacts.isEmpty()) {
+                        pack = List.of(Aggregates.random(artifacts));
+                        names.add(pack.get(0).getName());
+                    }
+                }
             } else if (sa.hasParam("Booster")) {
                 StaticData.instance().ensureAllCardsLoaded();
                 SealedTemplate booster = Aggregates.random(StaticData.instance().getBoosters());

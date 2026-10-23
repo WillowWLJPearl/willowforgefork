@@ -154,4 +154,36 @@ public class CustomMechanicsTest {
     public void piercingKeywordIsRegistered() {
         assertSame(Keyword.smartValueOf("PIERCING"), Keyword.PIERCING);
     }
+    @Test
+    public void garbageHeapHasPreparedSorceryAndScavengerAbilities() throws IOException {
+        Path res = Path.of("..", "forge-gui", "res");
+        if (!Files.isDirectory(res)) {
+            res = Path.of("forge-gui", "res");
+        }
+
+        final CardRules heap = CardRules.fromScript(Files.readAllLines(
+                res.resolve("cardsfolder/g/garbage_heap.txt")));
+        assertEquals(heap.getName(), "Garbage Heap");
+        assertTrue(heap.getType().isLand());
+        assertEquals(heap.getSplitType(), forge.card.CardSplitType.Prepare);
+        assertEquals(heap.getOtherPart().getName(), "Collect Garbage");
+        assertTrue(heap.getOtherPart().getType().isSorcery());
+        assertEquals(heap.getOtherPart().getManaCost().getCMC(), 0);
+
+        final java.util.List<String> abilities = new java.util.ArrayList<>();
+        heap.getOtherPart().getAbilities().forEach(abilities::add);
+        assertTrue(abilities.stream().anyMatch(a -> a.contains("RandomArtifactManaValue")),
+                "Prepared spell should conjure artifacts by calculated mana value");
+
+        final java.util.List<String> staticAbilities = new java.util.ArrayList<>();
+        heap.getMainPart().getStaticAbilities().forEach(staticAbilities::add);
+        assertTrue(staticAbilities.stream().anyMatch(s -> s.contains("ScavengeAttack")),
+                "Rat and Raccoon tribal ability should be present");
+
+        final String edition = Files.readString(res.resolve("editions/Willow Custom Cards.txt"));
+        assertTrue(edition.contains("Code=WGH"));
+        assertTrue(edition.contains("Type=Custom_Set"));
+        assertTrue(edition.contains("1 R Garbage Heap"));
+    }
+
 }
