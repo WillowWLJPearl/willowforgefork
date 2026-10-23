@@ -345,14 +345,21 @@ public class TokenAi extends SpellAbilityAi {
      * @return token creature created by ability
      */
     public static Card spawnToken(Player ai, SpellAbility sa) {
-        if (!sa.hasParam("TokenScript")) {
-            throw new RuntimeException("Spell Ability has no TokenScript: " + sa);
+        Card result;
+        if (sa.hasParam("RandomArtifactToken")) {
+            // Alchemy tokens do not have a fixed TokenScript. Use the actual
+            // game's token pool so land-play simulations can evaluate them.
+            result = forge.game.ability.effects.TokenEffect.sampleRandomArtifactToken(ai, sa);
+        } else {
+            if (!sa.hasParam("TokenScript")) {
+                throw new RuntimeException("Spell Ability has no TokenScript: " + sa);
+            }
+            // TODO for now, only checking the first token is good enough
+            result = TokenInfo.getProtoType(sa.getParam("TokenScript").split(",")[0], sa, ai);
         }
-        // TODO for now, only checking the first token is good enough
-        Card result = TokenInfo.getProtoType(sa.getParam("TokenScript").split(",")[0], sa, ai);
 
         if (result == null) {
-            throw new RuntimeException("don't find Token for TokenScript: " + sa.getParam("TokenScript"));
+            throw new RuntimeException("Could not create token for " + sa);
         }
 
         // set battlefield zone for LKI checks
